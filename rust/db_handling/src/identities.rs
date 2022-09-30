@@ -44,6 +44,7 @@ use sp_core::{ecdsa, ed25519, sr25519, Pair};
 #[cfg(any(feature = "active", feature = "signer"))]
 use sp_runtime::MultiSigner;
 use std::path::Path;
+use sp_core::sr25519::Public;
 #[cfg(any(feature = "active", feature = "signer"))]
 use zeroize::Zeroize;
 
@@ -53,6 +54,7 @@ use constants::ADDRTREE;
 use constants::ALICE_SEED_PHRASE;
 #[cfg(feature = "signer")]
 use constants::TRANSACTION;
+use defaults::default_chainspecs;
 
 #[cfg(feature = "signer")]
 use definitions::helpers::{get_multisigner, unhex};
@@ -990,6 +992,78 @@ where
                 .apply(&db_path)
         }
     }
+}
+
+#[cfg(feature = "signer")]
+pub fn try_import_address<P>(
+    public_key: &str,
+    path: &str,
+    db_path: P,
+) -> Result<()>
+    where
+        P: AsRef<Path>,
+{
+    let mut added = false;
+    let result = default_chainspecs().iter().map(|v| {
+        if path.starts_with(&v.path_id) {
+            let network_specs = v.clone();
+            let pubkey = hex::decode(public_key).unwrap();
+            let p = Public::from_raw(<[u8; 32]>::try_from(pubkey).unwrap());
+            let seed_name = "root";
+            let input_batch_prep = &Vec::new();
+            let mut address_prep = input_batch_prep.to_vec();
+
+            let multisigner = MultiSigner::Sr25519(p);
+            let public_key = p.to_vec();
+            let address_key = AddressKey::from_multisigner(&multisigner);
+            let (cropped_path, has_pwd) = match REG_PATH.captures(path) {
+                Some(caps) => match caps.name("path") {
+                    Some(a) => (a.as_str(), caps.name("password").is_some()),
+                    None => ("", caps.name("password").is_some()),
+                },
+                None => ("", false),
+            };
+
+            // prepare history log here
+            let identity_history = IdentityHistory::get(
+                seed_name,
+                &network_specs.encryption,
+                &public_key,
+                cropped_path,
+                network_specs.genesis_hash,
+            );
+            let history_prep = vec![Event::IdentityAdded { identity_history }];
+
+            let network_specs_key = NetworkSpecsKey::from_parts(&network_specs.genesis_hash, &network_specs.encryption);
+
+            let address_details = AddressDetails {
+                seed_name: seed_name.to_string(),
+                path: cropped_path.to_string(),
+                has_pwd: false,
+                network_id: vec![network_specs_key],
+                encryption: network_specs.encryption.to_owned(),
+                secret_exposed: false,
+            };
+            address_prep.push((address_key, address_details));
+            let prep_data = PrepData {
+                address_prep,
+                history_prep,
+            };
+            let id_batch = upd_id_batch(Batch::default(), prep_data.address_prep);
+            added = true;
+            TrDbCold::new()
+                .set_addresses(id_batch) // add created address
+                .set_history(events_to_batch(&db_path, prep_data.history_prep)?) // add corresponding history
+                .apply(&db_path);
+
+        }
+        return Ok(());
+    }).collect::<Result<()>>();
+    return if added {
+        Ok(())
+    } else {
+        result
+    };
 }
 
 /// Generate test Alice addresses in test cold database.
