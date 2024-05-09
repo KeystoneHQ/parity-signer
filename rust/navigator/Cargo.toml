@@ -10,7 +10,7 @@ db_handling = {path = "../db_handling", default-features = false, features = ["s
 definitions = {path = "../definitions", default-features = false, features = ["signer"]}
 hex = "0.4.3"
 lazy_static = "1.4.0"
-sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false}
+sp-runtime = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.27",default-features = false}
 thiserror = "1.0.37"
 transaction_parsing = {path = "../transaction_parsing"}
 transaction_signing = {path = "../transaction_signing"}
@@ -26,7 +26,7 @@ db_handling = {path = "../db_handling"}
 
 pretty_assertions = "1"
 
-sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, features = ["full_crypto"] }
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.27",default-features = false, features = ["full_crypto"] }
 
 [lib]
 name = "navigator"

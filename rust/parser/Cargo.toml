@@ -18,9 +18,9 @@ parity-scale-codec = {version = "3.2.1", features = ["derive", "bit-vec"]}
 printing_balance = {path = "../printing_balance"}
 regex = "1.6.0"
 scale-info = "2.2.0"
-sp-arithmetic = {git = "https://github.com/paritytech/substrate"}
-sp-core = {git = "https://github.com/paritytech/substrate", default-features = false, features = ["full_crypto"]}
-sp-runtime = {git = "https://github.com/paritytech/substrate", default-features = false}
+sp-arithmetic = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.27"}
+sp-core = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.27",default-features = false, features = ["full_crypto"]}
+sp-runtime = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.27",default-features = false}
 thiserror = "1.0.37"
 
 [features]
